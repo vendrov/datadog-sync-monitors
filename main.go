@@ -66,13 +66,12 @@ func main() {
 		log.Fatalf("fatal: %s\n", err)
 	}
 
-	// Iterate over monitor tags and look for
+	// Iterate over monitor tags and look for for the tag in 'SharedTag'
 	for _, monitor := range monitors {
 		for _, tag := range monitor.Tags {
 			if tag == SharedTag {
 				wg.Add(1)
 				go createMonitor(clientTarget, monitor, &wg)
-
 			}
 			continue
 		}
