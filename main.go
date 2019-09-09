@@ -44,14 +44,41 @@ func getCredentials() (sourceCreds, targetCreds credentials) {
 	return
 }
 
-func createMonitor(client *datadog.Client, monitor datadog.Monitor, wg *sync.WaitGroup) error {
-	defer wg.Done()
-	_, err := client.CreateMonitor(&monitor)
+// Get all DD monitors from source and target accounts
+func getAllMonitors(sourceClient *datadog.Client, targetClient *datadog.Client) ([]datadog.Monitor, []datadog.Monitor, error) {
+	sourceMonitors, err := sourceClient.GetMonitors()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	log.Println(monitor.GetName() + " Monitor has been created successfully")
+	targetMonitors, err := targetClient.GetMonitors()
+
+	return sourceMonitors, targetMonitors, err
+}
+
+func isMonitorExists(monitor datadog.Monitor, targetMonitors []datadog.Monitor) bool {
+	for _, targetMonitor := range targetMonitors {
+		if targetMonitor.GetName() == monitor.GetName() {
+			log.Fatalln("monitor already exists on the target account")
+			return true
+		}
+	}
+
+	return false
+}
+
+// Check if a monitor isn't already exits (by it's Name) on the target datadog account, and create monitor
+func createMonitor(client *datadog.Client, targetMonitors []datadog.Monitor, monitor datadog.Monitor, wg *sync.WaitGroup) error {
+	defer wg.Done()
+
+	if !isMonitorExists(monitor, targetMonitors) {
+		_, err := client.CreateMonitor(&monitor)
+		if err != nil {
+			return err
+		}
+		log.Println(monitor.GetName() + " Monitor has been created successfully")
+	}
+
 	return nil
 }
 
@@ -59,19 +86,19 @@ func main() {
 	sourceCreds, targetCreds := getCredentials()
 	clientSource := datadog.NewClient(sourceCreds.ddAPI, sourceCreds.ddAPP)
 	clientTarget := datadog.NewClient(targetCreds.ddAPI, targetCreds.ddAPP)
-	var wg sync.WaitGroup
-
-	monitors, err := clientSource.GetMonitors()
+	sourceMonitors, targetMonitors, err := getAllMonitors(clientSource, clientTarget)
 	if err != nil {
-		log.Fatalf("fatal: %s\n", err)
+		log.Fatalf("Coudldn't load monitors for datadog account: %s\n", err)
 	}
 
+	var wg sync.WaitGroup
+
 	// Iterate over monitor tags and look for for the tag in 'SharedTag'
-	for _, monitor := range monitors {
+	for _, monitor := range sourceMonitors {
 		for _, tag := range monitor.Tags {
 			if tag == SharedTag {
 				wg.Add(1)
-				go createMonitor(clientTarget, monitor, &wg)
+				go createMonitor(clientTarget, targetMonitors, monitor, &wg)
 			}
 			continue
 		}
