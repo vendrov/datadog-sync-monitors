@@ -1,0 +1,1 @@
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/vendrov2/default%2FMyPipeline?key=eyJhbGciOiJIUzI1NiJ9.NWQ4MjdlOGM0ODM5ZDhhNGRkYjIwMmJj.plQ4aWuwbqcRRGe7QfXftZ06tWUcbSGHR5-Bw7uHF5Q&type=cf-1)]( https://g.codefresh.io/pipelines/MyPipeline/builds?filter=trigger:build~Build;pipeline:5d8280a8ab5fbdf83cccdb93~MyPipeline)
